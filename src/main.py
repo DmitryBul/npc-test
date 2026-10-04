@@ -32,7 +32,7 @@ pygame.display.set_caption("NPC Life")
 clock = pygame.time.Clock()
 
 world = World()
-npc = NPC(10, 15)
+npc = NPC(10, 15, world)
 
 perception = Perception(
     npc,
@@ -91,12 +91,29 @@ def print_decision(scores, action):
     )
 
     for action_type, score in sorted_scores:
-        marker = "→" if action_type == action else " "
+        marker = (
+            "→"
+            if action_type == action.type
+            else " "
+        )
 
         print(
             f"    {marker} "
             f"{action_type.value.upper():5} "
             f"{score:.3f}"
+        )
+
+    print()
+    print(
+        f"  Chosen action: "
+        f"{action.type.value.upper()}"
+    )
+
+    if action.target:
+        print(
+            f"  Target: "
+            f"({action.target['x']}, "
+            f"{action.target['y']})"
         )
 
 
@@ -170,6 +187,14 @@ def print_tick(
         scores,
         action
     )
+
+    if action.target:
+        print()
+        print(
+            f"  Target: "
+            f"({action.target['x']}, "
+            f"{action.target['y']})"
+        )
 
     print_action_result(
         result
@@ -285,34 +310,20 @@ while running:
 
     observation = perception.observe()
 
-    # --------------------------------------------------------
-    # Memory retrieval
-    # --------------------------------------------------------
-
     memories = npc.memory.retrieve(
         observation
     )
-
-    # --------------------------------------------------------
-    # Decision
-    # --------------------------------------------------------
 
     action, scores = brain.decide(
         observation,
         memories
     )
 
-    # --------------------------------------------------------
-    # Action
-    # --------------------------------------------------------
-
     result = npc.perform_action(
         action
     )
 
-    # --------------------------------------------------------
-    # Memory / experience
-    # --------------------------------------------------------
+    world.remove_empty_food()
 
     npc.memory.remember(
         observation,

@@ -8,13 +8,21 @@ class World:
         self.time = 0
 
         self.foods = [
-            Food(25, 10),
-            Food(5, 20),
-            Food(30, 25),
-        ]
+        Food(15, 15),
+        Food(5, 20),
+        Food(30, 25),
+    ]
 
     def update(self):
         self.time += 1
+
+    def remove_empty_food(self):
+
+        self.foods = [
+            food
+            for food in self.foods
+            if food.amount > 0
+        ]
 
     @property
     def hour(self):

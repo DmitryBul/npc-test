@@ -16,14 +16,14 @@ class MemorySystem:
 
     def remember(self, observation, action, result):
         memory = Memory(
-            observation=observation,
-            action=action.value,
-            result=result,
-            importance=self.calculate_importance(
-                observation,
-                result
-            )
+        observation=observation,
+        action=action.type.value,
+        result=result,
+        importance=self.calculate_importance(
+            observation,
+            result
         )
+    )
 
         self.memories.append(memory)
 

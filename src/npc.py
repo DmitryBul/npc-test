@@ -1,17 +1,16 @@
-from actions import ActionType
 from memory import MemorySystem
+from actions import Action, ActionType
 
 
 class NPC:
-    def __init__(self, x, y):
-        
+    def __init__(self, x, y, world):
         self.x = x
         self.y = y
+        self.world = world
 
         self.health = 100.0
-        self.hunger = 0.0
+        self.hunger = 70.0
         self.energy = 100.0
-
         self.alive = True
 
         self.memory = MemorySystem()
@@ -31,23 +30,45 @@ class NPC:
             self.alive = False
 
     def perform_action(self, action):
+
         if not self.alive:
             return {
                 "success": False,
                 "message": "NPC is dead"
             }
 
-        if action == ActionType.WAIT:
+        if action.type == ActionType.WAIT:
             return self.wait()
 
-        elif action == ActionType.MOVE:
+        elif action.type == ActionType.MOVE:
             return self.move()
 
-        elif action == ActionType.EAT:
-            return self.eat()
+        elif action.type == ActionType.MOVE_TO:
 
-        elif action == ActionType.REST:
+            if action.target is None:
+                return {
+                    "success": False,
+                    "message": "MOVE_TO has no target"
+                }
+
+            return self.move_to(
+                action.target["x"],
+                action.target["y"]
+            )
+
+        elif action.type == ActionType.EAT:
+
+            food = self.get_food_at_position()
+
+            return self.eat(food)
+
+        elif action.type == ActionType.REST:
             return self.rest()
+
+        return {
+            "success": False,
+            "message": "Unknown action"
+        }
 
     def wait(self):
         return {
@@ -63,21 +84,37 @@ class NPC:
             "message": "NPC moved"
         }
 
-    def eat(self):
+    def eat(self, food):
+        if food is None:
+            return {
+                "success": False,
+                "message": "No food available"
+            }
+
         if self.hunger <= 0:
             return {
                 "success": False,
                 "message": "NPC is not hungry"
             }
 
-        self.hunger -= 20
+        old_hunger = self.hunger
+
+        self.hunger -= food.nutrition
 
         if self.hunger < 0:
             self.hunger = 0
 
+        food.amount -= 1
+
         return {
             "success": True,
-            "message": "NPC ate"
+            "message": (
+                f"NPC ate food "
+                f"and reduced hunger "
+                f"from {old_hunger:.1f} "
+                f"to {self.hunger:.1f}"
+            ),
+            "food_consumed": True
         }
 
     def rest(self):
@@ -90,3 +127,56 @@ class NPC:
             "success": True,
             "message": "NPC rested"
         }
+
+    def move_to(self, target_x, target_y):
+
+        if not self.alive:
+            return {
+                "success": False,
+                "message": "NPC is dead"
+            }
+
+        old_x = self.x
+        old_y = self.y
+
+        if self.x < target_x:
+            self.x += 1
+
+        elif self.x > target_x:
+            self.x -= 1
+
+        elif self.y < target_y:
+            self.y += 1
+
+        elif self.y > target_y:
+            self.y -= 1
+
+        else:
+            return {
+                "success": True,
+                "message": "NPC is already at target"
+            }
+
+        self.energy -= 1
+
+        return {
+            "success": True,
+            "message": (
+                f"NPC moved from "
+                f"({old_x}, {old_y}) "
+                f"to ({self.x}, {self.y})"
+            )
+        }
+
+    def get_food_at_position(self):
+
+        for food in self.world.foods:
+
+            if (
+                food.x == self.x
+                and food.y == self.y
+                and food.amount > 0
+            ):
+                return food
+
+        return None
