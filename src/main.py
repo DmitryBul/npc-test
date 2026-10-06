@@ -60,6 +60,13 @@ def print_npc_state(npc):
     print(f"    Hunger:   {npc.hunger:.1f}")
     print(f"    Energy:   {npc.energy:.1f}")
 
+    if npc.explore_target:
+        print(
+            f"    Explore target: "
+            f"({npc.explore_target['x']}, "
+            f"{npc.explore_target['y']})"
+        )
+
 
 def print_visible_food(observation):
     foods = observation["visible_food"]
@@ -177,11 +184,40 @@ def print_tick(
 
     print_separator()
 
+    print()
+    print("  World memory:")
+    print(
+        f"    Known locations: "
+        f"{len(npc.world_memory.get_all_locations())}"
+    )
+
+    print_separator()
+
     print_npc_state(npc)
+
 
     print_visible_food(
         observation
     )
+
+    print()
+    print("  Known food:")
+
+    known_food = observation.get(
+        "known_food",
+        []
+    )
+
+    print_separator()
+
+    if not known_food:
+        print("    None")
+    else:
+        for food in known_food:
+            print(
+                f"    Food remembered at "
+                f"({food['x']}, {food['y']})"
+            )
 
     print_decision(
         scores,
@@ -309,6 +345,20 @@ while running:
     # --------------------------------------------------------
 
     observation = perception.observe()
+
+    npc.world_memory.remember_location(
+        npc.x,
+        npc.y,
+        observation["visible_food"]
+    )
+
+    known_food = npc.world_memory.get_known_food_targets(
+        world
+    )
+
+    observation["known_food"] = known_food
+
+    observation["memory_system"] = npc.memory
 
     memories = npc.memory.retrieve(
         observation

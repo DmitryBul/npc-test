@@ -1,5 +1,7 @@
 from memory import MemorySystem
 from actions import Action, ActionType
+import random
+from world_memory import WorldMemory
 
 
 class NPC:
@@ -7,6 +9,9 @@ class NPC:
         self.x = x
         self.y = y
         self.world = world
+        
+
+        self.explore_target = None
 
         self.health = 100.0
         self.hunger = 70.0
@@ -14,6 +19,7 @@ class NPC:
         self.alive = True
 
         self.memory = MemorySystem()
+        self.world_memory = WorldMemory()
 
     def update(self):
         if not self.alive:
@@ -41,7 +47,14 @@ class NPC:
             return self.wait()
 
         elif action.type == ActionType.MOVE:
-            return self.move()
+
+            if self.explore_target is None:
+                self.choose_explore_target()
+
+            return self.move_to(
+                self.explore_target["x"],
+                self.explore_target["y"]
+            )
 
         elif action.type == ActionType.MOVE_TO:
 
@@ -152,9 +165,12 @@ class NPC:
             self.y -= 1
 
         else:
+
+            self.explore_target = None
+
             return {
                 "success": True,
-                "message": "NPC is already at target"
+                "message": "NPC reached target"
             }
 
         self.energy -= 1
@@ -180,3 +196,23 @@ class NPC:
                 return food
 
         return None
+
+    def choose_explore_target(self):
+        margin = 3
+
+        target_x = random.randint(
+            margin,
+            self.world.width - margin - 1
+        )
+
+        target_y = random.randint(
+            margin,
+            self.world.height - margin - 1
+        )
+
+        self.explore_target = {
+            "x": target_x,
+            "y": target_y
+        }
+
+        return self.explore_target

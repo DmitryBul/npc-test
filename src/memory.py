@@ -106,3 +106,86 @@ class MemorySystem:
 
     def get_all(self):
         return self.memories
+
+    def get_action_experience(self, action_type):
+        successes = 0
+        failures = 0
+
+        for memory in self.memories:
+            if memory.action != action_type.value:
+                continue
+
+            if memory.result["success"]:
+                successes += 1
+            else:
+                failures += 1
+
+        return successes, failures
+
+    def get_contextual_experience(
+        self,
+        action_type,
+        observation,
+        limit=20
+    ):
+        relevant_memories = []
+
+        for memory in self.memories:
+
+            if memory.action != action_type.value:
+                continue
+
+            old = memory.observation
+
+            hunger_diff = abs(
+                observation["hunger"] - old["hunger"]
+            ) / 100
+
+            energy_diff = abs(
+                observation["energy"] - old["energy"]
+            ) / 100
+
+            health_diff = abs(
+                observation["health"] - old["health"]
+            ) / 100
+
+            night_diff = (
+                0
+                if observation["is_night"] == old["is_night"]
+                else 1
+            )
+
+            # Есть ли еда в похожей ситуации?
+            current_food = len(
+                observation["visible_food"]
+            )
+
+            old_food = len(
+                old["visible_food"]
+            )
+
+            food_diff = min(
+                abs(current_food - old_food) / 3,
+                1
+            )
+
+            distance = (
+                hunger_diff
+                + energy_diff
+                + health_diff
+                + night_diff
+                + food_diff
+            )
+
+            similarity = 1 / (1 + distance)
+
+            relevant_memories.append(
+                (similarity, memory)
+            )
+
+        relevant_memories.sort(
+            key=lambda item: item[0],
+            reverse=True
+        )
+
+        return relevant_memories[:limit]

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from goals import GoalType
+
 
 class ActionType(Enum):
     WAIT = "wait"
@@ -14,3 +16,4 @@ class ActionType(Enum):
 class Action:
     type: ActionType
     target: dict | None = None
+    goal: GoalType | None = None
